@@ -26,4 +26,9 @@ def read_root(request: Request):
 @app.post("/generate/")
 async def generate_content(payload: schemas.GeneratePayload, db: Session = Depends(get_db)):
     generated_text = await run_in_threadpool(utils.generate_content, db, payload.topic)
-    return generated_text
+    return {"generated_text": generated_text}
+
+@app.post("/analyse/")
+async def analyse_content(payload: schemas.AnalysePayload, db: Session = Depends(get_db)):
+    readability, sentiment = await run_in_threadpool(utils.analyse_content, db, payload.content)
+    return {"readability": readability, "sentiment": sentiment}

@@ -24,6 +24,7 @@ class SentimentAnalysis(Base):
     __tablename__ = "sentiment_analysis"
 
     id = Column(Integer, primary_key=True, index=True)
+    readability = Column(String)
     sentiment = Column(String)
     search_term_id = Column(Integer, ForeignKey("search_terms.id"))
 

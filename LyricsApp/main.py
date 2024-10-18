@@ -62,4 +62,53 @@ async def create_upload_file(file: UploadFile = File(...), language: str = Form(
     
     summary = await summarize_text(lyrics)
     return {"lyrics": lyrics, "summary": summary}
+
+@app.post("/generate_image/")
+async def generate_image(payload: LyricsPayload):
+    try:
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            logging.error("OpenAI API Key not found")
+            raise HTTPException(status_code=500, detail="OpenAI API Key not found")
+        openai.api_key = api_key
+        
+        dalle_url = "https://api.openai.com/v1/images/generations"
+        
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        
+        prompt = f"Create an image of the following lyrics: {payload.lyrics}"
+        
+        if len(prompt) > 1000:
+            prompt = prompt[:1000]
+        
+        data = {
+            "size": "1024x1024",
+            "prompt": prompt,
+            "n": 1
+        }
+        logging.info(f"Sending request to OpenAI DALL-E: {data}")
+        response = requests.post(dalle_url, json=data, headers=headers)
+        logging.info(f"Received response from OpenAI DALL-E: {response.json()}")
+        
+        image_url = response.json()['data'][0]['url']
+        image_response = requests.get(image_url)
+        image_response.raise_for_status()
+        
+        image = Image.open(BytesIO(image_response.content))
+        if not os.path.exists("media"):
+            os.makedirs("media")
+        image_path = os.path.join("media", "generated_image.jpg")
+        image.save(image_path)
+        logging.info(f"Saved image to {image_path}")
+        return {"image_path": image_path}
     
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error generating image: {e}")
+        raise HTTPException(status_code=500, detail="Error generating image")
+
+@app.get("/media/generated_image.png")
+async def get_generated_image():
+    return FileResponse("media/generated_image.jpg")

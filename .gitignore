@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+/LyricsApp/lyrics_venv/
+
+
 # C extensions
 *.so
 

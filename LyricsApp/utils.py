@@ -36,4 +36,30 @@ def transcribe_audio_chunk(chunk, chunk_index):
     finally:
         os.remove(chunk_path)
     return text        
+
+def transcribe_wav_to_text(wav_path):
+    chunks = split_audio(wav_path)
+    full_text = ""
     
+    for i, chunk in enumerate(chunks):
+        chunk_text = transcribe_audio_chunk(chunk, i)
+        full_text += chunk_text + " "
+    logging.info(f"Transcribed {wav_path} to text")
+    return full_text.strip()
+
+
+async def summarize_text(text):
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": f"Summarize the following text: {text}"},
+            ],
+        )
+        summary = response.choices[0].message['content'].strip()
+        logging.info(f"Summarized text: {summary}")
+        
+    except Exception as e:
+        logging.error(f"Error summarizing text: {e}")
+        return "Summary generation failed"

@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from schemas import LyricsPayload
+from utils import summarize_text, transcribe_audio_chunk, transcribe_wav_to_text, convert_mp3_to_wav, split_audio
 
 import os
 from io import BytesIO
@@ -12,7 +13,7 @@ from pydub import AudioSegment
 from PIL import Image
 from dotenv import load_dotenv
 import logging
-import spee
+import speech_recognition as sr
 import openai
 import requests
 
@@ -54,4 +55,11 @@ async def create_upload_file(file: UploadFile = File(...), language: str = Form(
         
     # Audio processing
     wav_file_location = f"converted_files/{file.filename.replace('.mp3', '.wav')}"
+    convert_mp3_to_wav(file_location, wav_file_location)
+    
+    lyrics = transcribe_wav_to_text(wav_file_location)
+    os.remove(file_location)
+    
+    summary = await summarize_text(lyrics)
+    return {"lyrics": lyrics, "summary": summary}
     
